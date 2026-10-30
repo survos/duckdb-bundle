@@ -1,0 +1,20 @@
+{
+    "name": "survos/duckdb-demo",
+    "description": "Single-file DuckDB PDO profiling demo for HTTP and standalone console.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "survos/duckdb-bundle": "^2.45.9",
+        "symfony/console": "^8.1",
+        "symfony/framework-bundle": "^8.1",
+        "symfony/twig-bundle": "^8.1",
+        "symfony/web-profiler-bundle": "^8.1",
+        "symfony/stopwatch": "^8.1"
+    },
+    "config": {
+        "allow-plugins": {
+            "symfony/flex": false
+        }
+    }
+}

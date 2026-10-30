@@ -28,7 +28,7 @@ final readonly class NamedSources
             accessKey: $s3['access_key'] ?? '',
             secretKey: $s3['secret_key'] ?? '',
             sessionToken: $s3['session_token'] ?? null,
-        ));
+        ), $name);
     }
 
     public function __debugInfo(): array

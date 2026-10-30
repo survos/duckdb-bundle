@@ -34,6 +34,11 @@ final readonly class S3Configuration
         $this->useSsl = 'https' === $url['scheme'];
     }
 
+    public function getEndpoint(): string
+    {
+        return ($this->useSsl ? 'https://' : 'http://').$this->host;
+    }
+
     public function configure(\PDO $db, string $scope): void
     {
         $parameters = [$this->accessKey, $this->secretKey, $this->region, $this->host, $this->urlStyle, $scope];

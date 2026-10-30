@@ -1,0 +1,40 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+
+{% block summary %}
+    {% if profile.virtualType == 'command' and not profile.hasCollector('request') %}
+        <div class="container"><h2>CLI · {{ profile.url }}</h2><p>Standalone PDO profile · token {{ profile.token }} · exit {{ profile.statusCode }}</p></div>
+    {% else %}{{ parent() }}{% endif %}
+{% endblock %}
+
+{% block toolbar %}
+    {% set icon %}<span class="sf-toolbar-value">DuckDB {{ collector.queryCount }}</span><span class="sf-toolbar-label">calls · {{ collector.duration|number_format(2) }} ms</span>{% endset %}
+    {% set text %}<div class="sf-toolbar-info-piece"><b>PDO calls</b><span>{{ collector.queryCount }}</span></div><div class="sf-toolbar-info-piece"><b>Errors</b><span>{{ collector.errorCount }}</span></div>{% endset %}
+    {{ include('@WebProfiler/Profiler/toolbar_item.html.twig', {link: profiler_url, status: collector.errorCount ? 'red' : 'normal'}) }}
+{% endblock %}
+
+{% block menu %}<span class="label"><strong>DuckDB</strong><span class="count">{{ collector.queryCount }}</span></span>{% endblock %}
+
+{% block panel %}
+    <h2>Connections</h2>
+    <table><thead><tr><th>ID / source</th><th>Location</th><th>PDO connect (ms)</th><th>Total open (ms)</th><th>Status</th></tr></thead><tbody>
+    {% for connection in collector.connections %}<tr><td>#{{ connection.id }} {{ connection.source }}</td><td><strong>{{ connection.transport }}</strong><br><code>{{ connection.location }}</code><br>PDO: <code>{{ connection.dsn }}</code>{% if connection.endpoint %}<br>Endpoint: <code>{{ connection.endpoint }}</code>{% endif %}</td><td>{{ connection.connectDuration|number_format(3) }}</td><td>{{ connection.openDuration|number_format(3) }}</td><td>{{ connection.status }} {{ connection.error }}</td></tr>{% else %}<tr><td colspan="5">No connections opened during this profile.</td></tr>{% endfor %}
+    </tbody></table>
+    <p>S3 opens include extension setup and read-only attachment. Schema inspection is excluded. Open time overlaps setup SQL timings; do not add them together.</p>
+    <h2>DuckDB PDO</h2>
+    <div class="metrics"><div class="metric"><span class="value">{{ collector.queryCount }}</span><span class="label">PDO calls</span></div><div class="metric"><span class="value">{{ collector.duration|number_format(2) }} <span class="unit">ms</span></span><span class="label">Execution time</span></div><div class="metric"><span class="value">{{ collector.errorCount }}</span><span class="label">Errors</span></div></div>
+    <p>Preparation and execution are separate calls. Fetching and object hydration are not timed. Bound values and exception messages are not recorded. Results are entries fetched by the caller (possibly partial), or affected rows for exec. A COUNT query returns one result; its value is not inspected.</p>
+    {% if collector.dropped %}<p>{{ collector.dropped }} calls omitted from the detail list; totals include them.</p>{% endif %}
+    <table><thead><tr><th>Connection / source</th><th>Call</th><th>Time (ms)</th><th>SQL</th><th>Fetched results / affected</th><th>Error</th></tr></thead><tbody>
+    {% for query in collector.queries %}<tr><td>#{{ query.connectionId }} {{ query.source }}</td><td>{{ query.operation }}</td><td>{{ query.duration|number_format(3) }}</td><td><pre>{{ query.sql }}</pre></td><td>{% if query.resultCount is not null %}{{ query.resultCount }}{% else %}—{% endif %}</td><td>{{ query.error }}</td></tr>{% else %}<tr><td colspan="6">No DuckDB calls recorded.</td></tr>{% endfor %}
+    </tbody></table>
+    <h2>Schema snapshots</h2>
+    <p>Metadata from opened connections only. Inspection calls are excluded from PDO totals.</p>
+    {% for source, schema in collector.schemas %}
+        <h3>{{ source }}</h3>
+        {% if schema.error is defined %}<p>{{ schema.error }}</p>{% else %}
+        {% if schema.truncated %}<p>Limited to 2,000 columns.</p>{% endif %}
+        <table><thead><tr><th>Schema</th><th>Table / view</th><th>Type</th><th>Column</th><th>Data type</th><th>Nullable</th></tr></thead><tbody>
+        {% for column in schema.columns %}<tr><td>{{ column.schema }}</td><td>{{ column.name }}</td><td>{{ column.type }}</td><td>{{ column.columnName }}</td><td>{{ column.dataType }}</td><td>{{ column.nullable }}</td></tr>{% endfor %}
+        </tbody></table>{% endif %}
+    {% else %}<p>No schema snapshots collected.</p>{% endfor %}
+{% endblock %}
