@@ -1,0 +1,32 @@
+{
+    "name": "survos/duckdb-bundle",
+    "description": "Read-only DuckDB PDO connections and explicit named local or S3 sources for Symfony.",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "keywords": [
+        "symfony",
+        "duckdb",
+        "pdo",
+        "s3"
+    ],
+    "require": {
+        "php": "^8.5",
+        "ext-pdo": "*",
+        "ext-pdo_duckdb": "*",
+        "survos/kit-bundle": "^2.36",
+        "symfony/framework-bundle": "^8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Survos\\DuckDbBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Survos\\DuckDbBundle\\Tests\\": "tests/"
+        }
+    }
+}
