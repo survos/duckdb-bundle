@@ -7,12 +7,18 @@
 {% endblock %}
 
 {% block toolbar %}
-    {% set icon %}<span class="sf-toolbar-value">DuckDB {{ collector.queryCount }}</span><span class="sf-toolbar-label">calls · {{ collector.duration|number_format(2) }} ms</span>{% endset %}
+    {% set icon %}{{ include('@SurvosDuckDb/Collector/duckdb-icon.svg.twig') }}<span class="sf-toolbar-value">{{ collector.queryCount }}</span><span class="sf-toolbar-label">calls · {{ collector.duration|number_format(2) }} ms</span>{% endset %}
     {% set text %}<div class="sf-toolbar-info-piece"><b>PDO calls</b><span>{{ collector.queryCount }}</span></div><div class="sf-toolbar-info-piece"><b>Errors</b><span>{{ collector.errorCount }}</span></div>{% endset %}
     {{ include('@WebProfiler/Profiler/toolbar_item.html.twig', {link: profiler_url, status: collector.errorCount ? 'red' : 'normal'}) }}
 {% endblock %}
 
-{% block menu %}<span class="label"><strong>DuckDB</strong><span class="count">{{ collector.queryCount }}</span></span>{% endblock %}
+{% block menu %}
+    <span class="label">
+        <span class="icon" aria-hidden="true">{{ include('@SurvosDuckDb/Collector/duckdb-icon.svg.twig') }}</span>
+        <strong>DuckDB</strong>
+        <span class="count">{{ collector.queryCount }}</span>
+    </span>
+{% endblock %}
 
 {% block panel %}
     <h2>Connections</h2>
@@ -20,7 +26,8 @@
     {% for connection in collector.connections %}<tr><td>#{{ connection.id }} {{ connection.source }}</td><td><strong>{{ connection.transport }}</strong><br><code>{{ connection.location }}</code><br>PDO: <code>{{ connection.dsn }}</code>{% if connection.endpoint %}<br>Endpoint: <code>{{ connection.endpoint }}</code>{% endif %}</td><td>{{ connection.connectDuration|number_format(3) }}</td><td>{{ connection.openDuration|number_format(3) }}</td><td>{{ connection.status }} {{ connection.error }}</td></tr>{% else %}<tr><td colspan="5">No connections opened during this profile.</td></tr>{% endfor %}
     </tbody></table>
     <p>S3 opens include extension setup and read-only attachment. Schema inspection is excluded. Open time overlaps setup SQL timings; do not add them together.</p>
-    <h2>DuckDB PDO</h2>
+    <h2>DuckDB calls</h2>
+    <p>Doctrine also records queries executed through DBAL. This panel adds DuckDB connection details, schema snapshots, and direct PDO calls. The two collectors overlap; their totals should not be added together.</p>
     <div class="metrics"><div class="metric"><span class="value">{{ collector.queryCount }}</span><span class="label">PDO calls</span></div><div class="metric"><span class="value">{{ collector.duration|number_format(2) }} <span class="unit">ms</span></span><span class="label">Execution time</span></div><div class="metric"><span class="value">{{ collector.errorCount }}</span><span class="label">Errors</span></div></div>
     <p>Preparation and execution are separate calls. Fetching and object hydration are not timed. Bound values and exception messages are not recorded. Results are entries fetched by the caller (possibly partial), or affected rows for exec. A COUNT query returns one result; its value is not inspected.</p>
     {% if collector.dropped %}<p>{{ collector.dropped }} calls omitted from the detail list; totals include them.</p>{% endif %}

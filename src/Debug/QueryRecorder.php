@@ -40,6 +40,10 @@ final class QueryRecorder
                 $error = 'PDO returned false';
             }
 
+            if ($result instanceof ProfiledResult) {
+                $result->setProfileEntry($entryId);
+            }
+
             if ('query' === $operation && $result instanceof TraceableStatement) {
                 $result->setProfileEntry($entryId);
             } elseif ('execute' === $operation && $statement) {

@@ -102,7 +102,7 @@ survos_duck_db:
     max_queries: 500
 ```
 
-With `symfony/web-profiler-bundle` enabled, a **DuckDB** toolbar item and panel show
+With `symfony/web-profiler-bundle` enabled, a **DuckDB icon** toolbar item and panel show
 source names, SQL, durations in milliseconds, errors, and schema snapshots.
 The Connections section gives each opened PDO instance its own ID and shows the
 source name, local/memory/S3 location, native DSN, target URI, S3 endpoint, open
@@ -214,3 +214,25 @@ The suite uses native DuckDB to check direct and prepared calls, bound values,
 failures, caps, schema snapshots, serialization/reset, and rendering of HTTP and
 standalone console profiles. `DUCKDB_TEST_AUTOLOAD` and `DUCKDB_TEST_TMPDIR` allow
 an existing test environment and a writable temporary directory.
+
+
+## Automatic Doctrine DBAL profiling
+
+When profiling is enabled (by default in debug mode) and Doctrine DBAL is installed,
+the bundle registers a `doctrine.middleware` automatically. No application driver,
+connection subclass, or profiling configuration is needed. DuckDB connections are
+detected from the native PDO engine, so custom DuckDB DBAL drivers/platforms also
+work. Other database engines are passed through without collection.
+
+The middleware records DBAL queries, prepare/execute calls, transactions, errors,
+connection timing, schema snapshots and fetched result counts in the same DuckDB
+panel as native PDO sources. Bound values are not stored. It preserves the original
+driver, platform, binding and exception behavior. Connections already using the
+bundle's TraceablePdo are not wrapped twice. `profiling: false` installs no middleware.
+
+For DBAL connections, recording covers calls through DBAL; calls made directly on
+an unwrapped native PDO obtained from `getNativeConnection()` bypass that layer.
+Use the bundle's PDO factory for standalone PDO instrumentation. Driver connection
+setup SQL is included in connection timing, but not in the DBAL query list. Failed
+connections cannot be classified by their native PDO engine and are not recorded
+by this middleware. The normal Doctrine profiler remains available independently.

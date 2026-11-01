@@ -21,7 +21,9 @@
         "symfony/console": "^8.1",
         "symfony/twig-bundle": "^8.1",
         "symfony/web-profiler-bundle": "^8.1",
-        "symfony/stopwatch": "^8.1"
+        "symfony/stopwatch": "^8.1",
+        "doctrine/dbal": "^4.4",
+        "thomas-0816/doctrine-dbal-duckdb": "^1.3"
     },
     "autoload": {
         "psr-4": {
@@ -34,6 +36,7 @@
         }
     },
     "suggest": {
-        "symfony/web-profiler-bundle": "Render the DuckDB toolbar and profile panel in debug applications."
+        "symfony/web-profiler-bundle": "Render the DuckDB toolbar and profile panel in debug applications.",
+        "doctrine/dbal": "Automatically profile DuckDB Doctrine queries when the middleware integration is available."
     }
 }

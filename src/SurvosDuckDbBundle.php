@@ -48,6 +48,12 @@ final class SurvosDuckDbBundle extends AbstractSurvosBundle
             $services->set(Debug\DuckDbDataCollector::class)->args([service(Debug\QueryRecorder::class)])
                 ->tag('data_collector', ['id' => 'duckdb', 'template' => '@SurvosDuckDb/Collector/duckdb.html.twig']);
             $factory->arg('$recorder', service(Debug\QueryRecorder::class));
+            if (interface_exists(\Doctrine\DBAL\Driver\Middleware::class)) {
+                $services->set(Debug\Doctrine\ProfilingMiddleware::class)
+                    ->args([service(Debug\QueryRecorder::class), $config['collect_schema'] ? service(SchemaInspector::class) : null])
+                    ->tag('doctrine.middleware');
+            }
+
             if ($config['collect_schema']) {
                 $factory->arg('$inspector', service(SchemaInspector::class));
             }

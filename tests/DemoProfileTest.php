@@ -82,7 +82,8 @@ final class DemoProfileTest extends TestCase
             }
             $response = $kernel->handle(Request::create('/_wdt/'.$httpToken));
             self::assertSame(200, $response->getStatusCode(), $response->getContent());
-            self::assertStringContainsString('DuckDB 4', $response->getContent());
+            self::assertStringContainsString('aria-label="DuckDB"', $response->getContent());
+            self::assertStringContainsString('<span class="sf-toolbar-value">4</span>', $response->getContent());
         } finally {
             $kernel->shutdown();
             $fs->remove($directory);
