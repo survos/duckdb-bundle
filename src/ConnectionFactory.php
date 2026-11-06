@@ -11,9 +11,18 @@ final readonly class ConnectionFactory
     {
     }
 
-    private function connect(string $dsn, string $source, array $options = [], ?string $location = null, ?string $endpoint = null): \PDO
+    /** A PDO that reports to the profiler when it is on; for callers that run their own ATTACH sequence. */
+    public function pdo(string $dsn, string $source, array $options = [], ?string $location = null, ?string $endpoint = null): \PDO
     {
         return null === $this->recorder ? new \PDO($dsn, options: $options) : new Debug\TraceablePdo($dsn, $this->recorder, $source, $options, $location, $endpoint);
+    }
+
+    /** Marks the end of a caller's own open sequence (ATTACH and friends) so the profiler shows its cost. */
+    public function finishOpen(\PDO $db, float $milliseconds, ?\Throwable $error = null): void
+    {
+        if ($db instanceof Debug\TraceablePdo) {
+            $db->finishOpen($milliseconds, $error);
+        }
     }
 
     private function inspect(\PDO $db, string $source): \PDO
@@ -40,7 +49,7 @@ final readonly class ConnectionFactory
             }
             $start = hrtime(true);
             $s3 ??= new S3Configuration();
-            $db = $this->connect('duckdb::memory:', $source, location: $uri, endpoint: $s3->getEndpoint());
+            $db = $this->pdo('duckdb::memory:', $source, location: $uri, endpoint: $s3->getEndpoint());
             $error = null;
             try {
                 $db->exec('LOAD httpfs');
@@ -68,6 +77,6 @@ final readonly class ConnectionFactory
             throw new \RuntimeException('The configured DuckDB file does not exist.');
         }
 
-        return $this->inspect($this->connect('duckdb:'.$uri, $source, [\PDO::DUCKDB_ATTR_CONFIG => ['access_mode' => 'read_only']]), $source);
+        return $this->inspect($this->pdo('duckdb:'.$uri, $source, [\PDO::DUCKDB_ATTR_CONFIG => ['access_mode' => 'read_only']]), $source);
     }
 }

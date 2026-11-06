@@ -52,6 +52,21 @@ final class DuckDbDataCollector extends DataCollector implements LateDataCollect
         return $this->data['queries'] ?? [];
     }
 
+    public function getPool(): array
+    {
+        return $this->data['pool'] ?? [];
+    }
+
+    public function getPoolHits(): int
+    {
+        return count(array_filter($this->getPool(), static fn (array $e): bool => $e['hit']));
+    }
+
+    public function getPoolMisses(): int
+    {
+        return count($this->getPool()) - $this->getPoolHits();
+    }
+
     public function getSchemas(): array
     {
         return $this->data['schemas'] ?? [];

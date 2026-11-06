@@ -21,6 +21,11 @@
 {% endblock %}
 
 {% block panel %}
+    <h2>Connection pool</h2>
+    <p>{{ collector.poolHits }} reused, {{ collector.poolMisses }} opened. A reused connection skips the ATTACH.</p>
+    {% if collector.pool %}<table><thead><tr><th>Source</th><th>Key</th><th>Result</th></tr></thead><tbody>
+    {% for entry in collector.pool %}<tr><td>{{ entry.source }}</td><td><code>{{ entry.key }}</code></td><td>{{ entry.hit ? 'reused' : 'opened' }}{% if entry.connectionId %} · #{{ entry.connectionId }}{% endif %}</td></tr>{% endfor %}
+    </tbody></table>{% endif %}
     <h2>Connections</h2>
     <table><thead><tr><th>ID / source</th><th>Location</th><th>PDO connect (ms)</th><th>Total open (ms)</th><th>Status</th></tr></thead><tbody>
     {% for connection in collector.connections %}<tr><td>#{{ connection.id }} {{ connection.source }}</td><td><strong>{{ connection.transport }}</strong><br><code>{{ connection.location }}</code><br>PDO: <code>{{ connection.dsn }}</code>{% if connection.endpoint %}<br>Endpoint: <code>{{ connection.endpoint }}</code>{% endif %}</td><td>{{ connection.connectDuration|number_format(3) }}</td><td>{{ connection.openDuration|number_format(3) }}</td><td>{{ connection.status }} {{ connection.error }}</td></tr>{% else %}<tr><td colspan="5">No connections opened during this profile.</td></tr>{% endfor %}

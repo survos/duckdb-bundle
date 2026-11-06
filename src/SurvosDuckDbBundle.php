@@ -22,6 +22,10 @@ final class SurvosDuckDbBundle extends AbstractSurvosBundle
         $definition->rootNode()->children()
             ->booleanNode('profiling')->defaultNull()->end()
             ->booleanNode('collect_schema')->defaultTrue()->end()
+            ->arrayNode('pool')->addDefaultsIfNotSet()->children()
+                ->integerNode('ttl')->min(0)->defaultValue(300)->info('Seconds a pooled connection is reused before reopening; 0 = never expire.')->end()
+                ->integerNode('max_connections')->min(1)->defaultValue(8)->end()
+            ->end()->end()
             ->integerNode('max_queries')->min(1)->defaultValue(500)->end()
             ->arrayNode('sources')->useAttributeAsKey('name')->normalizeKeys(false)->arrayPrototype()->children()
                 ->scalarNode('uri')->isRequired()->cannotBeEmpty()->end()
@@ -43,11 +47,13 @@ final class SurvosDuckDbBundle extends AbstractSurvosBundle
         $services = $container->services();
         $services->set(SchemaInspector::class);
         $factory = $services->set(ConnectionFactory::class);
+        $pool = $services->set(ConnectionPool::class)->arg('$ttlSeconds', $config['pool']['ttl'])->arg('$maxConnections', $config['pool']['max_connections']);
         if ($config['profiling'] ?? $builder->getParameter('kernel.debug')) {
             $services->set(Debug\QueryRecorder::class)->arg('$maxQueries', $config['max_queries'])->tag('kernel.reset', ['method' => 'reset']);
             $services->set(Debug\DuckDbDataCollector::class)->args([service(Debug\QueryRecorder::class)])
                 ->tag('data_collector', ['id' => 'duckdb', 'template' => '@SurvosDuckDb/Collector/duckdb.html.twig']);
             $factory->arg('$recorder', service(Debug\QueryRecorder::class));
+            $pool->arg('$recorder', service(Debug\QueryRecorder::class));
             if (interface_exists(\Doctrine\DBAL\Driver\Middleware::class)) {
                 $services->set(Debug\Doctrine\ProfilingMiddleware::class)
                     ->args([service(Debug\QueryRecorder::class), $config['collect_schema'] ? service(SchemaInspector::class) : null])

@@ -13,6 +13,7 @@ final class QueryRecorder
     private int $nextEntryId = 0;
     private array $entryIndexes = [];
     private array $schemas = [];
+    private array $pool = [];
     private int $count = 0;
     private int $errors = 0;
     private float $duration = 0;
@@ -130,6 +131,12 @@ final class QueryRecorder
         return preg_replace('/((?:password|secret|token|access_key|key_id)=)[^;]+/i', '$1[redacted]', $value);
     }
 
+    /** One pooled-connection lookup: a hit reused an open connection, a miss opened (and attached) a new one. */
+    public function recordPool(string $source, string $key, bool $hit, ?int $connectionId): void
+    {
+        $this->pool[] = ['source' => $source, 'key' => $this->safeLocation($key), 'hit' => $hit, 'connectionId' => $connectionId];
+    }
+
     public function recordSchema(string $source, array $schema): void
     {
         $this->schemas[$source] = $schema;
@@ -137,12 +144,12 @@ final class QueryRecorder
 
     public function snapshot(): array
     {
-        return ['connections' => array_values($this->connections), 'queries' => $this->queries, 'schemas' => $this->schemas, 'count' => $this->count, 'errors' => $this->errors, 'duration' => $this->duration, 'dropped' => $this->count - count($this->queries)];
+        return ['connections' => array_values($this->connections), 'queries' => $this->queries, 'schemas' => $this->schemas, 'pool' => $this->pool, 'count' => $this->count, 'errors' => $this->errors, 'duration' => $this->duration, 'dropped' => $this->count - count($this->queries)];
     }
 
     public function reset(): void
     {
-        $this->queries = $this->schemas = $this->connections = $this->entryIndexes = [];
+        $this->queries = $this->schemas = $this->connections = $this->entryIndexes = $this->pool = [];
         $this->count = $this->errors = 0;
         $this->duration = 0;
     }
