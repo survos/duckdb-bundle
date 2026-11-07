@@ -12,6 +12,37 @@ use Survos\DuckDbBundle\SchemaInspector;
 
 final class ProfilerTest extends TestCase
 {
+    public function testLateCollectionPreservesRequestAcrossRecorderReset(): void
+    {
+        $recorder = new QueryRecorder();
+        $db = new TraceablePdo('duckdb::memory:', $recorder, 'first');
+        $db->query('SELECT 1');
+        $collector = new DuckDbDataCollector($recorder);
+        $collector->capture();
+        $profile = clone $collector;
+        $collector->reset();
+        $profile->lateCollect();
+        self::assertSame(1, $profile->getQueryCount());
+        self::assertCount(1, $profile->getConnections());
+        $db->query('SELECT 2');
+        $profile->lateCollect();
+        self::assertSame('SELECT 1', $profile->getQueries()[0]['sql']);
+        self::assertSame(0, $collector->getQueryCount());
+    }
+
+    public function testLateCollectionIncludesCallsBeforeRecorderReset(): void
+    {
+        $recorder = new QueryRecorder();
+        $db = new TraceablePdo('duckdb::memory:', $recorder, 'first');
+        $db->query('SELECT 1');
+        $collector = new DuckDbDataCollector($recorder);
+        $collector->capture();
+        $profile = clone $collector;
+        $db->query('SELECT 2');
+        $profile->lateCollect();
+        self::assertSame(2, $profile->getQueryCount());
+    }
+
     public function testPdoCallsPreparedBindingsErrorsAndRedaction(): void
     {
         $recorder = new QueryRecorder();

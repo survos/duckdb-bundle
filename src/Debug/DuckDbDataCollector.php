@@ -11,6 +11,8 @@ use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
 
 final class DuckDbDataCollector extends DataCollector implements LateDataCollectorInterface
 {
+    private ?int $generation = null;
+
     public function __construct(private readonly QueryRecorder $recorder)
     {
     }
@@ -24,16 +26,22 @@ final class DuckDbDataCollector extends DataCollector implements LateDataCollect
     public function capture(): void
     {
         $this->data = $this->recorder->snapshot();
+        $this->generation = $this->recorder->generation();
     }
 
     public function lateCollect(): void
     {
-        $this->capture();
+        // Profile clones share the recorder. A service reset must not erase the
+        // captured request or replace it with calls from a subsequent request.
+        if (null === $this->generation || $this->generation === $this->recorder->generation()) {
+            $this->capture();
+        }
     }
 
     public function reset(): void
     {
         parent::reset();
+        $this->generation = null;
         $this->recorder->reset();
     }
 

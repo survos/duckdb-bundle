@@ -18,6 +18,7 @@ final class QueryRecorder
     private int $errors = 0;
     private float $duration = 0;
     private int $suspended = 0;
+    private int $generation = 0;
 
     public function __construct(private readonly int $maxQueries = 500)
     {
@@ -147,8 +148,14 @@ final class QueryRecorder
         return ['connections' => array_values($this->connections), 'queries' => $this->queries, 'schemas' => $this->schemas, 'pool' => $this->pool, 'count' => $this->count, 'errors' => $this->errors, 'duration' => $this->duration, 'dropped' => $this->count - count($this->queries)];
     }
 
+    public function generation(): int
+    {
+        return $this->generation;
+    }
+
     public function reset(): void
     {
+        ++$this->generation;
         $this->queries = $this->schemas = $this->connections = $this->entryIndexes = $this->pool = [];
         $this->count = $this->errors = 0;
         $this->duration = 0;
