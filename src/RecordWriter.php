@@ -13,21 +13,50 @@ final class RecordWriter
     private int $rows = 0;
     private array $counts = [];
     private string $table;
+    private bool $finished = false;
 
-    public function __construct(private readonly string $path, ConnectionFactory $factory = new ConnectionFactory(), string $table = 'records')
+    public function __construct(private readonly string $path, private readonly ConnectionFactory $factory = new ConnectionFactory(), string $table = 'records', private readonly int $minimumShreddingSize = 128)
     {
         if (!is_dir(dirname($path))) {
             throw new \InvalidArgumentException('Create the snapshot directory before opening a writer.');
         }
         $this->temporary = $path.'.building-'.bin2hex(random_bytes(8));
-        $this->db = $factory->pdo('duckdb:'.$this->temporary, 'raw-build');
+        $this->open();
+        $this->table = $table;
+        $this->createTable($table);
+        $this->db->exec('CREATE TABLE acquisition (metadata JSON)');
+    }
+
+    /** Temporarily release the connection without completing or publishing the snapshot. */
+    public function suspend(): void
+    {
+        $this->flush();
+        $this->db = null;
+    }
+
+    /** Reopen the same staging database after an LRU eviction; never recreate its tables. */
+    public function resume(): void
+    {
+        if ($this->finished) {
+            throw new \LogicException('Snapshot writer is finished.');
+        }
+        if (null === $this->db) {
+            $this->open();
+        }
+    }
+
+    private function open(): void
+    {
+        if ($this->minimumShreddingSize < 1) {
+            throw new \InvalidArgumentException('Minimum shredding size must be positive.');
+        }
+        $this->db = $this->factory->pdo('duckdb:'.$this->temporary, 'raw-build');
         $version = ltrim((string) $this->db->query('SELECT version()')->fetchColumn(), 'v');
         if (version_compare($version, '2.0.0', '<')) {
             throw new \RuntimeException('Record snapshots require DuckDB 2.0 or newer; upgrade ext-pdo_duckdb and its embedded engine.');
         }
-        $this->table = $table;
-        $this->createTable($table);
-        $this->db->exec('CREATE TABLE acquisition (metadata JSON)');
+        // Raw snapshots are often smaller than DuckDB's default 30,000-row threshold.
+        $this->db->exec('SET variant_minimum_shredding_size = '.$this->minimumShreddingSize);
     }
 
     private function createTable(string $table): void
@@ -43,6 +72,7 @@ final class RecordWriter
 
     public function selectTable(string $table): void
     {
+        $this->resume();
         $this->flush();
         $this->createTable($table);
         $this->table = $table;
@@ -50,6 +80,7 @@ final class RecordWriter
 
     public function dataset(array $metadata): void
     {
+        $this->resume();
         $this->db->exec('CREATE TABLE dataset (body VARIANT)');
         $this->db->prepare('INSERT INTO dataset VALUES (CAST(CAST(? AS JSON) AS VARIANT))')
             ->execute([json_encode($metadata, JSON_THROW_ON_ERROR)]);
@@ -57,9 +88,7 @@ final class RecordWriter
 
     public function write(array $row, ?string $sourceId = null): void
     {
-        if (null === $this->db) {
-            throw new \LogicException('Snapshot writer is closed.');
-        }
+        $this->resume();
         $json = json_encode($row, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION);
         ++$this->rows;
         $this->batch[] = [++$this->counts[$this->table], $sourceId, $json];
@@ -81,7 +110,8 @@ final class RecordWriter
     /** Completion describes the declared acquisition scope, including an explicit record limit. */
     public function finish(array $evidence): void
     {
-        if (null === $this->db || [] === $evidence) {
+        $this->resume();
+        if ([] === $evidence) {
             throw new \LogicException('An open writer and acquisition evidence are required.');
         }
         $this->flush();
@@ -103,6 +133,7 @@ final class RecordWriter
         if (is_file($packed.'.wal') || is_file($this->temporary.'.wal')) {
             throw new \RuntimeException('Snapshot has an unmerged WAL.');
         }
+        $this->finished = true;
         if (!rename($packed, $this->path)) {
             throw new \RuntimeException('Cannot publish raw snapshot.');
         }
