@@ -88,6 +88,74 @@ For an executable import example and read-only API, see the independent `demo/`
 directory in [duckdb-api-bundle](https://github.com/survos/duckdb-api-bundle).
 
 
+## Inspect snapshot fields and facets
+
+`SnapshotInspector` queries an existing VARIANT record column directly. It never
+creates JSONL, a sidecar, a persistent table or a full profile. Use a connection
+from `ConnectionFactory` or `NamedSources` to keep the snapshot read-only:
+
+```php
+use Survos\DuckDbBundle\SnapshotInspector;
+
+$db = $sources->open('archive');
+$inspector = new SnapshotInspector(); // also registered for injection
+$root = $inspector->fields($db, 'doc');
+$children = $inspector->fields($db, 'doc', path: ['record']);
+$facet = $inspector->distribution($db, 'doc', ['record', 'recordType']);
+```
+
+Fields returns `{fields: [{key, path, present}], truncated}` for the immediate
+object children. Repeat with a returned path to drill down. Presence includes
+explicit nulls; array contents are not traversed. Distribution returns
+`{values: [{valueJson, count}], truncated}` with exact counts, ordered by frequency
+then value. `valueJson` is JSON text, retaining scalar types and large numbers.
+Missing and null share one bucket. Arrays and objects are counted as whole values,
+not expanded into element facets. Grouping uses native DuckDB VARIANT semantics.
+
+Paths are lists of **literal keys**: `['a.b']` selects a dotted key, while `['a', 'b']`
+selects a nested key. Table/column names are single quoted identifiers, not SQL
+expressions. Select a schema/catalog on the connection first if necessary. The
+default column is `body`; pass `column:` to inspect another VARIANT column.
+Limits bound returned fields/buckets (1–10000); they do not sample records or
+bound the work needed for exact counts. Empty tables return empty lists.
+
+With `symfony/console`, the bundle registers `duckdb:inspect`:
+
+```sh
+php bin/console duckdb:inspect /path/to/raw.duckdb doc
+php bin/console duckdb:inspect /path/to/raw.duckdb doc --path=record
+php bin/console duckdb:inspect archive doc --named --path=record --path=recordType --distribution --limit=20
+```
+
+The command emits JSON. Repeat `--path` for nested keys; each option is literal,
+so `--path=a.b` selects the single dotted key. Without `--named`, the source is a
+local path or URI opened by `ConnectionFactory`; configured S3 credentials use a
+named source. Inspection requires DuckDB 2.0 VARIANT functions.
+
+### Optional legacy profile export
+
+Older code-generation consumers can explicitly request the existing profile shape:
+
+```sh
+composer require survos/jsonl-bundle
+php bin/console duckdb:inspect /path/to/raw.duckdb doc --legacy-profile > records.profile.json
+```
+
+This calls `Inspection\LegacyProfileExporter::export($db, $input, $table, $column)`.
+It requires jsonl-bundle's `Sqlite\LegacyProfile` adapter, but creates no SQLite
+database. Neither jsonl-bundle nor its adapter is needed for ordinary inspection.
+Without the adapter, export fails with an explicit optional-dependency message.
+
+Export preserves the decoded `field_stats`/legacy profile contract, scalar facet
+heuristics, null/presence counts, and array summaries. It scans all fields with the
+old defaults (depth 6, 2000 fields, top 20 values) and normalizes scalar values to
+SQLite-compatible atoms. `--limit` only controls ordinary inspection. Native
+non-JSON VARIANT types need explicit mapping and are rejected by legacy export.
+This is deliberately an optional exhaustive scan, not a prerequisite for browsing.
+In the NARA prototype (10,592 records), direct distributions took about 2–3 ms,
+while the full compatibility profile took about 9.7 seconds. These are local
+warm-cache measurements, not remote performance guarantees.
+
 ## PDO profiling
 
 Instrumentation is independent of HTTP: `Debug\QueryRecorder`, `Debug\TraceablePdo`

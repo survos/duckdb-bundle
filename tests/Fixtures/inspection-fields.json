@@ -1,0 +1,290 @@
+[
+    {
+        "path": "empty",
+        "json_types": {
+            "array": 4
+        },
+        "present": 4,
+        "non_null": 4,
+        "distinct_n": 0,
+        "min_v": null,
+        "max_v": null,
+        "len_min": null,
+        "len_max": null,
+        "len_avg": null,
+        "top_values": [],
+        "is_array": 1,
+        "heuristics": [],
+        "elements": {
+            "count": 0,
+            "distinct": 0,
+            "avgPerRow": 0,
+            "top": []
+        }
+    },
+    {
+        "path": "flag",
+        "json_types": {
+            "false": 1,
+            "null": 1,
+            "true": 2
+        },
+        "present": 4,
+        "non_null": 3,
+        "distinct_n": 2,
+        "min_v": "0",
+        "max_v": "1",
+        "len_min": null,
+        "len_max": null,
+        "len_avg": null,
+        "top_values": [
+            {
+                "value": 1,
+                "count": 2
+            },
+            {
+                "value": 0,
+                "count": 1
+            }
+        ],
+        "is_array": 0,
+        "heuristics": [],
+        "elements": null
+    },
+    {
+        "path": "id",
+        "json_types": {
+            "integer": 4
+        },
+        "present": 4,
+        "non_null": 4,
+        "distinct_n": 4,
+        "min_v": "1",
+        "max_v": "4",
+        "len_min": null,
+        "len_max": null,
+        "len_avg": null,
+        "top_values": [
+            {
+                "value": 1,
+                "count": 1
+            },
+            {
+                "value": 2,
+                "count": 1
+            },
+            {
+                "value": 3,
+                "count": 1
+            },
+            {
+                "value": 4,
+                "count": 1
+            }
+        ],
+        "is_array": 0,
+        "heuristics": [],
+        "elements": null
+    },
+    {
+        "path": "mixed",
+        "json_types": {
+            "integer": 1,
+            "real": 1,
+            "text": 1,
+            "true": 1
+        },
+        "present": 4,
+        "non_null": 4,
+        "distinct_n": 2,
+        "min_v": "1",
+        "max_v": "1",
+        "len_min": 1,
+        "len_max": 1,
+        "len_avg": 1,
+        "top_values": [
+            {
+                "value": 1,
+                "count": 3
+            },
+            {
+                "value": "1",
+                "count": 1
+            }
+        ],
+        "is_array": 0,
+        "heuristics": [],
+        "elements": null
+    },
+    {
+        "path": "tags",
+        "json_types": {
+            "array": 3,
+            "null": 1
+        },
+        "present": 4,
+        "non_null": 3,
+        "distinct_n": 0,
+        "min_v": null,
+        "max_v": null,
+        "len_min": null,
+        "len_max": null,
+        "len_avg": null,
+        "top_values": [],
+        "is_array": 1,
+        "heuristics": [],
+        "elements": {
+            "count": 10,
+            "distinct": 4,
+            "avgPerRow": 3.33,
+            "top": [
+                {
+                    "value": 0,
+                    "count": 2
+                },
+                {
+                    "value": 1,
+                    "count": 2
+                },
+                {
+                    "value": "red",
+                    "count": 2
+                },
+                {
+                    "value": null,
+                    "count": 1
+                },
+                {
+                    "value": "blue",
+                    "count": 1
+                }
+            ]
+        }
+    },
+    {
+        "path": "nested.name",
+        "json_types": {
+            "text": 3
+        },
+        "present": 3,
+        "non_null": 3,
+        "distinct_n": 2,
+        "min_v": "caf\u00e9",
+        "max_v": "\u65e5\u672c\u8a9e",
+        "len_min": 3,
+        "len_max": 4,
+        "len_avg": 3.67,
+        "top_values": [
+            {
+                "value": "caf\u00e9",
+                "count": 2
+            },
+            {
+                "value": "\u65e5\u672c\u8a9e",
+                "count": 1
+            }
+        ],
+        "is_array": 0,
+        "heuristics": [],
+        "elements": null
+    },
+    {
+        "path": "url",
+        "json_types": {
+            "text": 3
+        },
+        "present": 3,
+        "non_null": 3,
+        "distinct_n": 3,
+        "min_v": "https://example.com/a.jpg",
+        "max_v": "three word text",
+        "len_min": 15,
+        "len_max": 25,
+        "len_avg": 21.67,
+        "top_values": [
+            {
+                "value": "https://example.com/a.jpg",
+                "count": 1
+            },
+            {
+                "value": "https://example.com/b.jpg",
+                "count": 1
+            },
+            {
+                "value": "three word text",
+                "count": 1
+            }
+        ],
+        "is_array": 0,
+        "heuristics": {
+            "urlLike": true,
+            "imageLike": true
+        },
+        "elements": null
+    },
+    {
+        "path": "nullable",
+        "json_types": {
+            "null": 1,
+            "text": 1
+        },
+        "present": 2,
+        "non_null": 1,
+        "distinct_n": 1,
+        "min_v": "value",
+        "max_v": "value",
+        "len_min": 5,
+        "len_max": 5,
+        "len_avg": 5,
+        "top_values": [
+            {
+                "value": "value",
+                "count": 1
+            }
+        ],
+        "is_array": 0,
+        "heuristics": [],
+        "elements": null
+    },
+    {
+        "path": "\"a.b\"",
+        "json_types": {
+            "text": 1
+        },
+        "present": 1,
+        "non_null": 1,
+        "distinct_n": 1,
+        "min_v": "quoted key",
+        "max_v": "quoted key",
+        "len_min": 10,
+        "len_max": 10,
+        "len_avg": 10,
+        "top_values": [
+            {
+                "value": "quoted key",
+                "count": 1
+            }
+        ],
+        "is_array": 0,
+        "heuristics": [],
+        "elements": null
+    },
+    {
+        "path": "nested",
+        "json_types": {
+            "null": 1
+        },
+        "present": 1,
+        "non_null": 0,
+        "distinct_n": 0,
+        "min_v": null,
+        "max_v": null,
+        "len_min": null,
+        "len_max": null,
+        "len_avg": null,
+        "top_values": [],
+        "is_array": 0,
+        "heuristics": [],
+        "elements": null
+    }
+]

@@ -1,0 +1,4 @@
+{"a.b":"quoted key","empty":[],"flag":true,"id":1,"mixed":1,"nested":{"name":"café"},"nullable":null,"tags":["red","red",null,1,true,["x"],{"k":"v"}],"url":"https://example.com/a.jpg"}
+{"empty":[],"flag":false,"id":2,"mixed":1.0,"nested":{"name":"日本語"},"nullable":"value","tags":["blue",false,0],"url":"https://example.com/b.jpg"}
+{"empty":[],"flag":true,"id":3,"mixed":"1","nested":null,"tags":[],"url":"three word text"}
+{"empty":[],"flag":null,"id":4,"mixed":true,"nested":{"name":"café"},"tags":null}

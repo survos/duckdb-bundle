@@ -46,6 +46,14 @@ final class SurvosDuckDbBundle extends AbstractSurvosBundle
         parent::loadExtension($config, $container, $builder);
         $services = $container->services();
         $services->set(SchemaInspector::class);
+        $services->set(SnapshotInspector::class);
+        $services->set(Inspection\LegacyProfileExporter::class);
+        if (class_exists(\Symfony\Component\Console\Command\Command::class)) {
+            $services->set(Command\InspectCommand::class)->args([
+                service(ConnectionFactory::class), service(NamedSources::class),
+                service(SnapshotInspector::class), service(Inspection\LegacyProfileExporter::class),
+            ])->autoconfigure();
+        }
         $factory = $services->set(ConnectionFactory::class);
         $pool = $services->set(ConnectionPool::class)->arg('$ttlSeconds', $config['pool']['ttl'])->arg('$maxConnections', $config['pool']['max_connections']);
         if ($config['profiling'] ?? $builder->getParameter('kernel.debug')) {

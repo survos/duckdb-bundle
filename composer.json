@@ -37,6 +37,8 @@
     },
     "suggest": {
         "symfony/web-profiler-bundle": "Render the DuckDB toolbar and profile panel in debug applications.",
-        "doctrine/dbal": "Automatically profile DuckDB Doctrine queries when the middleware integration is available."
+        "doctrine/dbal": "Automatically profile DuckDB Doctrine queries when the middleware integration is available.",
+        "symfony/console": "Use the duckdb:inspect snapshot inspection command.",
+        "survos/jsonl-bundle": "Enable optional legacy profile export via Sqlite\\LegacyProfile."
     }
 }
