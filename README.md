@@ -236,3 +236,15 @@ Use the bundle's PDO factory for standalone PDO instrumentation. Driver connecti
 setup SQL is included in connection timing, but not in the DBAL query list. Failed
 connections cannot be classified by their native PDO engine and are not recorded
 by this middleware. The normal Doctrine profiler remains available independently.
+
+## Raw record snapshots
+
+`RecordWriter` keeps record bodies as `VARIANT` and lets DuckDB 2.0 shred common
+fields into typed storage automatically. The default minimum shredding size is
+128 rows, so small snapshots benefit too; this is independent of ingestion batch size.
+
+Bulk writes use one JSON-array parameter and `INSERT … SELECT` per batch, with
+an 8,192-record / 8 MiB encoded-payload limit (a single larger record is retained
+whole). No temporary JSONL file or inferred fixed schema is required. Sequence,
+nullable source IDs, table switching, writer-pool suspension, completion metadata
+and checkpointed atomic publication retain the same contracts.

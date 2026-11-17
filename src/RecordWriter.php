@@ -10,6 +10,9 @@ final class RecordWriter
     private ?\PDO $db = null;
     private ?string $temporary = null;
     private array $batch = [];
+    private int $batchBytes = 0;
+    private const int BATCH_ROWS = 8192;
+    private const int BATCH_BYTES = 8 * 1024 * 1024;
     private int $rows = 0;
     private array $counts = [];
     private string $table;
@@ -91,8 +94,15 @@ final class RecordWriter
         $this->resume();
         $json = json_encode($row, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION);
         ++$this->rows;
-        $this->batch[] = [++$this->counts[$this->table], $sourceId, $json];
-        if (count($this->batch) >= 512) {
+        // Keep each body as JSON until DuckDB casts it directly to VARIANT. A single
+        // parameter avoids preparing thousands of scalar SQL expressions per batch.
+        $entry = '['.(++$this->counts[$this->table]).','.json_encode($sourceId, JSON_THROW_ON_ERROR).','.$json.']';
+        if ([] !== $this->batch && $this->batchBytes + strlen($entry) > self::BATCH_BYTES) {
+            $this->flush();
+        }
+        $this->batch[] = $entry;
+        $this->batchBytes += strlen($entry);
+        if (count($this->batch) >= self::BATCH_ROWS || $this->batchBytes >= self::BATCH_BYTES) {
             $this->flush();
         }
     }
@@ -102,9 +112,12 @@ final class RecordWriter
         if ([] === $this->batch) {
             return;
         }
-        $statement = $this->db->prepare('INSERT INTO "'.$this->table.'" VALUES '.implode(',', array_fill(0, count($this->batch), '(?, ?, CAST(CAST(? AS JSON) AS VARIANT))')));
-        $statement->execute(array_merge(...$this->batch));
+        $statement = $this->db->prepare('INSERT INTO "'.$this->table.'"
+            SELECT CAST(value->>0 AS BIGINT), value->>1, CAST(value->2 AS VARIANT)
+            FROM json_each(CAST(? AS JSON)) ORDER BY CAST(key AS BIGINT)');
+        $statement->execute(['['.implode(',', $this->batch).']']);
         $this->batch = [];
+        $this->batchBytes = 0;
     }
 
     /** Completion describes the declared acquisition scope, including an explicit record limit. */
