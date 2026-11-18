@@ -78,4 +78,31 @@ final class RecordWriterBulkTest extends TestCase
             }rmdir($root);
         }
     }
+
+    public function testAMemoryLimitAndThreadCountAreAppliedAndCheckedBeforeOpening(): void
+    {
+        $root = sys_get_temp_dir().'/record-limit-'.bin2hex(random_bytes(8));
+        mkdir($root);
+        $path = $root.'/raw.duckdb';
+        try {
+            $writer = new RecordWriter($path, table: 'obj', memoryLimit: '256MB', threads: 1);
+            for ($i = 0; $i < 9000; ++$i) {
+                $writer->write(['i' => $i]);
+            }
+            $writer->finish(['dataset' => 'test/limit']);
+            unset($writer);
+            $db = (new ConnectionFactory())->open($path);
+            self::assertSame(9000, (int) $db->query('SELECT count(*) FROM obj')->fetchColumn());
+            unset($db);
+            self::assertSame([$path], glob($root.'/{,.}[!.]*', GLOB_BRACE));
+
+            $this->expectException(\InvalidArgumentException::class);
+            new RecordWriter($path, memoryLimit: "1GB'; DROP TABLE obj; --");
+        } finally {
+            unset($writer, $db);
+            foreach (glob($root.'/*') as $f) {
+                unlink($f);
+            }rmdir($root);
+        }
+    }
 }

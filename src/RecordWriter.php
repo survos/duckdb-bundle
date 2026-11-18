@@ -18,8 +18,14 @@ final class RecordWriter
     private string $table;
     private bool $finished = false;
 
-    public function __construct(private readonly string $path, private readonly ConnectionFactory $factory = new ConnectionFactory(), string $table = 'records', private readonly int $minimumShreddingSize = 128)
+    public function __construct(private readonly string $path, private readonly ConnectionFactory $factory = new ConnectionFactory(), string $table = 'records', private readonly int $minimumShreddingSize = 128, private readonly ?string $memoryLimit = null, private readonly ?int $threads = null)
     {
+        if (null !== $memoryLimit && !preg_match('/^\d+(\.\d+)?\s?(K|M|G)i?B$/D', $memoryLimit)) {
+            throw new \InvalidArgumentException('Memory limit must look like 2GB or 512MiB.');
+        }
+        if (null !== $threads && $threads < 1) {
+            throw new \InvalidArgumentException('Threads must be positive.');
+        }
         if (!is_dir(dirname($path))) {
             throw new \InvalidArgumentException('Create the snapshot directory before opening a writer.');
         }
@@ -60,6 +66,14 @@ final class RecordWriter
         }
         // Raw snapshots are often smaller than DuckDB's default 30,000-row threshold.
         $this->db->exec('SET variant_minimum_shredding_size = '.$this->minimumShreddingSize);
+        // Without a limit DuckDB takes 80% of the host's memory, per process: parallel builders then exhaust it.
+        // Above the limit it spills to <snapshot>.tmp, next to the snapshot.
+        if (null !== $this->memoryLimit) {
+            $this->db->exec("SET memory_limit = '".$this->memoryLimit."'");
+        }
+        if (null !== $this->threads) {
+            $this->db->exec('SET threads = '.$this->threads);
+        }
     }
 
     private function createTable(string $table): void
